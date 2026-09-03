@@ -37,6 +37,41 @@ object SkinManagerImpl : SkinManager, GlobalManager {
 
     private const val DIV_FACTOR = 16F / 0.9375F
 
+    // Internal caps reuse the otherwise-unused whole-part cap slots, populated per skin from the pixels surrounding each cut.
+    private val BODY_SKIN_UV = SegmentedSkinUV(UVPos(16, 20), UVPos(16, 36), 8, 4)
+    private val LEFT_LEG_SKIN_UV = SegmentedSkinUV(UVPos(16, 52), UVPos(0, 52), 4, 4)
+    private val RIGHT_LEG_SKIN_UV = SegmentedSkinUV(UVPos(0, 20), UVPos(0, 36), 4, 4)
+    private val LEFT_ARM_SKIN_UV = SegmentedSkinUV(UVPos(32, 52), UVPos(48, 52), 4, 4)
+    private val RIGHT_ARM_SKIN_UV = SegmentedSkinUV(UVPos(40, 20), UVPos(40, 36), 4, 4)
+    private val SLIM_LEFT_ARM_SKIN_UV = SegmentedSkinUV(UVPos(32, 52), UVPos(48, 52), 3, 4)
+    private val SLIM_RIGHT_ARM_SKIN_UV = SegmentedSkinUV(UVPos(40, 20), UVPos(40, 36), 3, 4)
+
+    private fun UVModel.addJointCap(
+        width: Float,
+        depth: Float,
+        positionY: Float,
+        face: UVFace,
+        baseUV: UVPos,
+        overlayUV: UVPos
+    ) = addElement(
+        // The synthesized cap is one averaged tint, so one full-size plane avoids per-pixel model expansion.
+        UVElement(
+            ElementVector(width, 0f, depth).div(DIV_FACTOR),
+            ElementVector(0f, positionY, 0f).div(DIV_FACTOR),
+            UVSpace(1, 1, 1),
+            UVElement.ColorType.RGB,
+            mapOf(face to baseUV)
+        )
+    ).addElement(
+        UVElement(
+            ElementVector(width, 0f, depth).div(DIV_FACTOR).inflate(0.25f),
+            ElementVector(0f, positionY, 0f).div(DIV_FACTOR),
+            UVSpace(1, 1, 1),
+            UVElement.ColorType.COMPLEX_ARGB,
+            mapOf(face to overlayUV)
+        )
+    )
+
     private var uvNamespace = UVNamespace(
         CONFIG.namespace(),
         "player_limb"
@@ -107,7 +142,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.UP to UVPos(20, 16 + 16)
             )
         )
-    )
+    ).addJointCap(8f, 4f, 0f, UVFace.DOWN, UVPos(28, 16), UVPos(28, 16 + 16))
     private val WAIST = UVModel(
         { uvNamespace },
         "waist"
@@ -137,7 +172,8 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.WEST to UVPos(28, 24 + 16)
             )
         )
-    )
+    ).addJointCap(8f, 4f, 4f, UVFace.UP, UVPos(20, 16), UVPos(20, 16 + 16))
+        .addJointCap(8f, 4f, 0f, UVFace.DOWN, UVPos(28, 16), UVPos(28, 16 + 16))
     private val HIP = UVModel(
         { uvNamespace },
         "hip"
@@ -169,7 +205,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.DOWN to UVPos(28, 16 + 16)
             )
         )
-    )
+    ).addJointCap(8f, 4f, 4f, UVFace.UP, UVPos(20, 16), UVPos(20, 16 + 16))
     private val LEFT_LEG = UVModel(
         { uvNamespace },
         "left_leg"
@@ -201,7 +237,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.UP to UVPos(20 - 16, 48)
             )
         )
-    )
+    ).addJointCap(4f, 4f, -6f, UVFace.DOWN, UVPos(24, 48), UVPos(24 - 16, 48))
     private val LEFT_FORELEG = UVModel(
         { uvNamespace },
         "left_foreleg"
@@ -233,7 +269,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.DOWN to UVPos(24 - 16, 48)
             )
         )
-    )
+    ).addJointCap(4f, 4f, 0f, UVFace.UP, UVPos(20, 48), UVPos(20 - 16, 48))
     private val RIGHT_LEG = UVModel(
         { uvNamespace },
         "right_leg"
@@ -265,7 +301,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.UP to UVPos(4, 16 + 16)
             )
         )
-    )
+    ).addJointCap(4f, 4f, -6f, UVFace.DOWN, UVPos(8, 16), UVPos(8, 16 + 16))
     private val RIGHT_FORELEG = UVModel(
         { uvNamespace },
         "right_foreleg"
@@ -297,7 +333,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.DOWN to UVPos(8, 16 + 16)
             )
         )
-    )
+    ).addJointCap(4f, 4f, 0f, UVFace.UP, UVPos(4, 16), UVPos(4, 16 + 16))
     private val LEFT_ARM = UVModel(
         { uvNamespace },
         "left_arm"
@@ -329,7 +365,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.UP to UVPos(36 + 16, 48)
             )
         )
-    )
+    ).addJointCap(4f, 4f, -6f, UVFace.DOWN, UVPos(40, 48), UVPos(40 + 16, 48))
     private val LEFT_FOREARM = UVModel(
         { uvNamespace },
         "left_forearm"
@@ -361,7 +397,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.DOWN to UVPos(40 + 16, 48)
             )
         )
-    )
+    ).addJointCap(4f, 4f, 0f, UVFace.UP, UVPos(36, 48), UVPos(36 + 16, 48))
     private val RIGHT_ARM = UVModel(
         { uvNamespace },
         "right_arm"
@@ -393,7 +429,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.UP to UVPos(44, 16 + 16)
             )
         )
-    )
+    ).addJointCap(4f, 4f, -6f, UVFace.DOWN, UVPos(48, 16), UVPos(48, 16 + 16))
     private val RIGHT_FOREARM = UVModel(
         { uvNamespace },
         "right_forearm"
@@ -425,7 +461,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.DOWN to UVPos(48, 16 + 16)
             )
         )
-    )
+    ).addJointCap(4f, 4f, 0f, UVFace.UP, UVPos(44, 16), UVPos(44, 16 + 16))
     private val SLIM_LEFT_ARM = UVModel(
         { uvNamespace },
         "left_slim_arm"
@@ -457,7 +493,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.UP to UVPos(36 + 16, 48)
             )
         )
-    )
+    ).addJointCap(3f, 4f, -6f, UVFace.DOWN, UVPos(39, 48), UVPos(39 + 16, 48))
     private val SLIM_LEFT_FOREARM = UVModel(
         { uvNamespace },
         "left_slim_forearm"
@@ -489,7 +525,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.DOWN to UVPos(39 + 16, 48)
             )
         )
-    )
+    ).addJointCap(3f, 4f, 0f, UVFace.UP, UVPos(36, 48), UVPos(36 + 16, 48))
     private val SLIM_RIGHT_ARM = UVModel(
         { uvNamespace },
         "right_slim_arm"
@@ -521,7 +557,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.UP to UVPos(44, 16 + 16)
             )
         )
-    )
+    ).addJointCap(3f, 4f, -6f, UVFace.DOWN, UVPos(47, 16), UVPos(47, 16 + 16))
     private val SLIM_RIGHT_FOREARM = UVModel(
         { uvNamespace },
         "right_slim_forearm"
@@ -553,7 +589,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 UVFace.DOWN to UVPos(47, 16 + 16)
             )
         )
-    )
+    ).addJointCap(3f, 4f, 0f, UVFace.UP, UVPos(44, 16), UVPos(44, 16 + 16))
     private val CAPE = UVModel(
         { uvNamespace },
         "cape"
@@ -779,17 +815,33 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         ) : this(
             profile,
             HEAD.asModelData(skinImage),
-            HIP.asModelData(skinImage),
-            WAIST.asModelData(skinImage),
-            CHEST.asModelData(skinImage),
-            (if (profile.skin().slim) SLIM_LEFT_ARM else LEFT_ARM).asModelData(skinImage),
-            (if (profile.skin().slim) SLIM_RIGHT_ARM else RIGHT_ARM).asModelData(skinImage) ,
-            LEFT_LEG.asModelData(skinImage),
-            LEFT_FORELEG.asModelData(skinImage),
-            RIGHT_LEG.asModelData(skinImage),
-            RIGHT_FORELEG.asModelData(skinImage),
-            (if (profile.skin().slim) SLIM_LEFT_FOREARM else LEFT_FOREARM).asModelData(skinImage).asItem(),
-            (if (profile.skin().slim) SLIM_RIGHT_FOREARM else RIGHT_FOREARM).asModelData(skinImage).asItem(),
+            HIP.asModelData(BODY_SKIN_UV.closeSegment(skinImage, startY = 8, height = 4, closeTop = true)),
+            WAIST.asModelData(BODY_SKIN_UV.closeSegment(skinImage, startY = 4, height = 4, closeTop = true, closeBottom = true)),
+            CHEST.asModelData(BODY_SKIN_UV.closeSegment(skinImage, startY = 0, height = 4, closeBottom = true)),
+            if (profile.skin().slim) {
+                SLIM_LEFT_ARM.asModelData(SLIM_LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+            } else {
+                LEFT_ARM.asModelData(LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+            },
+            if (profile.skin().slim) {
+                SLIM_RIGHT_ARM.asModelData(SLIM_RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+            } else {
+                RIGHT_ARM.asModelData(RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+            },
+            LEFT_LEG.asModelData(LEFT_LEG_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true)),
+            LEFT_FORELEG.asModelData(LEFT_LEG_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)),
+            RIGHT_LEG.asModelData(RIGHT_LEG_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true)),
+            RIGHT_FORELEG.asModelData(RIGHT_LEG_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)),
+            if (profile.skin().slim) {
+                SLIM_LEFT_FOREARM.asModelData(SLIM_LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+            } else {
+                LEFT_FOREARM.asModelData(LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+            },
+            if (profile.skin().slim) {
+                SLIM_RIGHT_FOREARM.asModelData(SLIM_RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+            } else {
+                RIGHT_FOREARM.asModelData(RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+            },
             capeImage?.let { CAPE.asModelData(it).asItem() }
         )
         override fun profile(): ModelProfile = profile
