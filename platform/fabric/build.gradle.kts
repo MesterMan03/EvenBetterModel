@@ -7,7 +7,8 @@ plugins {
     id("net.fabricmc.fabric-loom")
 }
 
-val versionString = "${rootProject.version}+${property("minecraft_version")}"
+val fabricMinecraftVersion = property("fabric_minecraft_version").toString()
+val versionString = "${rootProject.version}+$fabricMinecraftVersion"
 
 val jarName = "${rootProject.name}-$versionString-${project.name.substringAfterLast('-')}.jar"
 val jarDir = rootProject.layout.buildDirectory.dir("libs")
@@ -44,7 +45,7 @@ loom {
 
 dependencies {
     // Minecraft
-    minecraft("com.mojang:minecraft:${property("minecraft_version")}")
+    minecraft("com.mojang:minecraft:$fabricMinecraftVersion")
 
     api(project(":bettermodel-api")); include(project(":bettermodel-api"))
     api(project(":bettermodel-api:bettermodel-mod-api")); include(project(":bettermodel-api:bettermodel-mod-api"))
@@ -86,7 +87,7 @@ fabricModJson {
     environment = Environment.ANY
 
     depends = mapOf(
-        "minecraft" to listOf(">=${LATEST_VERSION.first()}"),
+        "minecraft" to listOf("~$fabricMinecraftVersion"),
         "fabricloader" to listOf("*"),
         "fabric-language-kotlin" to listOf(">=${libs.versions.fabric.language.kotlin.get()}"),
 
@@ -192,7 +193,7 @@ tasks {
 modrinth {
     loaders = listOf("fabric", "quilt")
     uploadFile.set(jarDir.map { it.file(jarName) })
-    gameVersions = LATEST_VERSION
+    gameVersions = listOf(fabricMinecraftVersion)
     dependencies {
         required.version("fabric-api", libs.versions.fabric.api.get())
         required.version("fabric-language-kotlin", libs.versions.fabric.language.kotlin.get())

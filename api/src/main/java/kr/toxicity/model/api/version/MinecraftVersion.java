@@ -21,6 +21,12 @@ import java.util.Objects;
  */
 public record MinecraftVersion(int major, int minor, int patch) implements Comparable<MinecraftVersion> {
     /**
+     * Minecraft 26.3.
+     * <p>Example: {@code MinecraftVersion.parse("26.3").equals(V26_3)} is {@code true}.</p>
+     * @since 3.4.1
+     */
+    public static final MinecraftVersion V26_3 = of(26, 3, 0);
+    /**
      * 26.2
      */
     public static final MinecraftVersion V26_2 = of(26, 2, 0);

@@ -27,7 +27,8 @@ object ArmorManager : GlobalManager {
 
     private val ARMOR_PATH = "assets/minecraft/textures/entity/equipment/humanoid" to "assets/minecraft/textures/entity/equipment/humanoid_leggings"
     private val ARMOR_TRIM_PATH = "assets/minecraft/textures/trims/entity/humanoid" to "assets/minecraft/textures/trims/entity/humanoid_leggings"
-    private const val ARMOR_PALETTE_PATH = "assets/minecraft/textures/trims/color_palettes"
+    private const val ARMOR_PALETTE_PATH = "assets/minecraft/textures/palettes/trim"
+    private const val LEGACY_ARMOR_PALETTE_PATH = "assets/minecraft/textures/trims/color_palettes"
 
     private val armors = setOf(
         "chainmail",
@@ -178,6 +179,12 @@ object ArmorManager : GlobalManager {
 
     private fun JarFile.loadImage(path: String, name: String) = getInputStream(ZipEntry("$path/$name.png")).use { it.readAllBytes() }
 
+    private fun JarFile.loadPaletteImage(name: String): ByteArray {
+        // 26.3 moved trim palettes; keep cached older client jars usable as well.
+        val path = if (getJarEntry("$ARMOR_PALETTE_PATH/$name.png") != null) ARMOR_PALETTE_PATH else LEGACY_ARMOR_PALETTE_PATH
+        return loadImage(path, name)
+    }
+
     override fun reload(
         pipeline: ReloadPipeline,
         zipper: PackZipper
@@ -203,7 +210,7 @@ object ArmorManager : GlobalManager {
                             ArmorImageCache::size
                         ) { image -> image.write(trimsFile) }
                         pipeline.forEachParallel(
-                            palettes.map { name -> name to jar.loadImage(ARMOR_PALETTE_PATH, name) },
+                            palettes.map { name -> name to jar.loadPaletteImage(name) },
                             { image -> image.second.size.toLong() },
                         ) { image -> File(palettesFile, "${image.first}.png").writeBytes(image.second)}
                     }
