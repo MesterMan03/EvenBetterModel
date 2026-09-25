@@ -691,6 +691,8 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         SLIM_RIGHT_FOREARM.write()
         CAPE.write()
 
+        VanillaPlayerModels.write(block)
+
         block(UVTextureName.DEFAULT.normalPixel(uvNamespace))
         block(UVTextureName.DEFAULT.translucentPixel(uvNamespace))
     }
@@ -805,7 +807,8 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         private val rightForeLeg: SkinModelData,
         private val leftForeArm: TransformedItemStack,
         private val rightForeArm: TransformedItemStack,
-        private val cape: TransformedItemStack?
+        private val cape: TransformedItemStack?,
+        private val vanilla: VanillaPlayerModels.Skin
     ) : SkinData {
 
         constructor(
@@ -842,8 +845,12 @@ object SkinManagerImpl : SkinManager, GlobalManager {
             } else {
                 RIGHT_FOREARM.asModelData(RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
             },
-            capeImage?.let { CAPE.asModelData(it).asItem() }
+            capeImage?.let { CAPE.asModelData(it).asItem() },
+            VanillaPlayerModels.Skin(slim = profile.skin().slim, image = skinImage)
         )
+        override fun vanillaAvatarProtocol(): Int = 1
+        override fun vanillaParts(skinParts: Int, cameraOwner: Boolean): Map<String, TransformedItemStack> = vanilla.items(skinParts, cameraOwner = cameraOwner)
+        override fun firstPersonArms(skinParts: Int): Map<String, TransformedItemStack> = vanilla.arms(skinParts)
         override fun profile(): ModelProfile = profile
         override fun head(armor: PlayerArmor): TransformedItemStack = head.asItem(ArmorResource.HELMET, armor.helmet())
         override fun hip(armor: PlayerArmor): TransformedItemStack = hip.asItem(ArmorResource.HIP, armor.leggings())
