@@ -692,6 +692,8 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         CAPE.write()
 
         VanillaPlayerModels.write(block)
+        VanillaArmorModels.write(block)
+        SegmentedArmorModels.write(block)
 
         block(UVTextureName.DEFAULT.normalPixel(uvNamespace))
         block(UVTextureName.DEFAULT.translucentPixel(uvNamespace))
@@ -851,6 +853,14 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         override fun vanillaAvatarProtocol(): Int = 1
         override fun vanillaParts(skinParts: Int, cameraOwner: Boolean): Map<String, TransformedItemStack> = vanilla.items(skinParts, cameraOwner = cameraOwner)
         override fun firstPersonArms(skinParts: Int): Map<String, TransformedItemStack> = vanilla.arms(skinParts)
+        override fun vanillaArmorProtocol(): Int = 2
+        override fun vanillaArmor(slot: String, assetId: String, dyedColor: Int?, trimPattern: String?, trimMaterial: String?, cameraOwner: Boolean): Map<String, TransformedItemStack>? =
+            VanillaArmorModels.items(slot, assetId, dyedColor, trimPattern, trimMaterial, cameraOwner = cameraOwner)
+        override fun vanillaArmor(slot: String, assetId: String, dyedColor: Int?, trimPattern: String?, trimMaterial: String?, cameraOwner: Boolean, opacity: Float): Map<String, TransformedItemStack>? =
+            VanillaArmorModels.items(slot, assetId, dyedColor, trimPattern, trimMaterial, cameraOwner = cameraOwner, opacity = opacity)
+        override fun animationArmorProtocol(): Int = 1
+        override fun animationArmor(slot: String, assetId: String, dyedColor: Int?, trimPattern: String?, trimMaterial: String?, cameraOwner: Boolean, opacity: Float): Map<String, TransformedItemStack>? =
+            SegmentedArmorModels.items(slot, assetId, dyedColor, trimPattern, trimMaterial, cameraOwner = cameraOwner, opacity = opacity)
         override fun profile(): ModelProfile = profile
         override fun head(armor: PlayerArmor): TransformedItemStack = head.asItem(ArmorResource.HELMET, armor.helmet())
         override fun hip(armor: PlayerArmor): TransformedItemStack = hip.asItem(ArmorResource.HIP, armor.leggings())

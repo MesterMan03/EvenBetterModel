@@ -117,43 +117,51 @@ object ArmorManager : GlobalManager {
         val file: File
     )
 
-    private fun downloadMinecraftClient(): CompletableFuture<MinecraftClient?> = httpClient {
+    private fun downloadMinecraftClient(version: String? = null): CompletableFuture<MinecraftClient?> {
         val cacheFolder = DATA_FOLDER.getOrCreateDirectory(".cache")
-        sendAsync(
-            buildHttpRequest {
-                GET()
-                uri(URI.create("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"))
-            },
-            HttpResponse.BodyHandlers.ofInputStream()
-        ).thenComposeAsync { response1 ->
-            val manifest = response1.toJson(VersionManifest::class.java).manifest
-            val cache = File(cacheFolder, "${manifest.id}.jar")
-            if (cache.exists() && cache.length() > 0) CompletableFuture.supplyAsync { MinecraftClient(manifest.id, cache) }
-            else sendAsync(
+        if (version != null) {
+            val cached = File(cacheFolder, "$version.jar")
+            if (cached.isFile && cached.length() > 0) return CompletableFuture.completedFuture(MinecraftClient(version, cached))
+        }
+        return httpClient {
+            sendAsync(
                 buildHttpRequest {
                     GET()
-                    uri(manifest.toURI())
+                    uri(URI.create("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"))
                 },
                 HttpResponse.BodyHandlers.ofInputStream()
-            ).thenComposeAsync { response2 ->
-                sendAsync(
+            ).thenComposeAsync { response1 ->
+                val versions = response1.toJson(VersionManifest::class.java)
+                val manifest = if (version == null) versions.manifest else versions.versions.firstOrNull { it.id == version }
+                    ?: return@thenComposeAsync CompletableFuture.completedFuture(null)
+                val cache = File(cacheFolder, "${manifest.id}.jar")
+                if (cache.exists() && cache.length() > 0) CompletableFuture.supplyAsync { MinecraftClient(manifest.id, cache) }
+                else sendAsync(
                     buildHttpRequest {
                         GET()
-                        uri(response2.toJson(VersionHash::class.java).client.toURI())
+                        uri(manifest.toURI())
                     },
                     HttpResponse.BodyHandlers.ofInputStream()
-                ).thenComposeAsync { response3 ->
-                    val temp = createTempFile(cache.parentFile.toPath(), manifest.id, ".tmp").toFile()
-                    response3.body().use { input ->
-                        temp.outputStream().buffered().use(input::copyTo)
+                ).thenComposeAsync { response2 ->
+                    sendAsync(
+                        buildHttpRequest {
+                            GET()
+                            uri(response2.toJson(VersionHash::class.java).client.toURI())
+                        },
+                        HttpResponse.BodyHandlers.ofInputStream()
+                    ).thenComposeAsync { response3 ->
+                        val temp = createTempFile(cache.parentFile.toPath(), manifest.id, ".tmp").toFile()
+                        response3.body().use { input ->
+                            temp.outputStream().buffered().use(input::copyTo)
+                        }
+                        temp.renameTo(cache)
+                        CompletableFuture.supplyAsync { MinecraftClient(manifest.id, cache) }
                     }
-                    temp.renameTo(cache)
-                    CompletableFuture.supplyAsync { MinecraftClient(manifest.id, cache) }
                 }
             }
+        }.orElse {
+            CompletableFuture.completedFuture(null)
         }
-    }.orElse {
-        CompletableFuture.completedFuture(null)
     }
 
     private class ArmorImageCache(
@@ -184,6 +192,7 @@ object ArmorManager : GlobalManager {
     ) {
         if (!CONFIG.module().playerAnimation) {
             armor = ArmorModel.EMPTY
+            VanillaArmorModels.reload(null)
             return
         }
         val folder = DATA_FOLDER.getOrCreateDirectory("armors") {
@@ -212,6 +221,15 @@ object ArmorManager : GlobalManager {
             }.handleFailure {
                 "Unable to download default armor assets."
             }
+        }
+        // The avatar protocol targets 26.3 geometry and palette metadata. Reuse the exact-version
+        // cache without a manifest request; never replace it with a newer or older latest release.
+        VanillaArmorModels.reload(null)
+        runCatching {
+            val version = PLATFORM.version().run { "$major.$minor" + if (patch == 0) "" else ".$patch" }
+            if (version == VanillaArmorAssets.MINECRAFT_VERSION) VanillaArmorModels.reload(downloadMinecraftClient(version).join()?.file)
+        }.handleFailure {
+            "Unable to load rigid avatar armor assets; armored players will use their native renderer."
         }
         val textures = PackObfuscator.order()
         val models = PackObfuscator.order()

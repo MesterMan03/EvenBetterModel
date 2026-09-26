@@ -98,11 +98,11 @@ internal object VanillaPlayerModels {
     fun write(block: (UVByteBuilder) -> Unit) {
         models.forEach { (key, parts) ->
             parts.values.forEach { model ->
-                model.asJson(if (key.owner) ownerTexture else observerTexture).forEach { block(it.withMetricUVs()) }
+                BatchedSkinModels.export(model, if (key.owner) ownerTexture else observerTexture).forEach { block(it.withMetricUVs()) }
             }
         }
         handModels.values.forEach { parts ->
-            parts.values.forEach { model -> model.asJson(handTexture).forEach { block(it.withMetricUVs()) } }
+            parts.values.forEach { model -> BatchedSkinModels.export(model, handTexture).forEach { block(it.withMetricUVs()) } }
         }
         for ((name, alpha, rgb) in listOf(
             Triple("observer_pixel", 255, OBSERVER_RGB), Triple("observer_translucent_pixel", 128, OBSERVER_RGB),
@@ -121,7 +121,7 @@ internal object VanillaPlayerModels {
      * tints or selecting thousands of texture variants. The 26.3 cuboid baker maps UVs linearly;
      * the inset keeps every face inside the uniform 16x16 material marker at all mip levels.
      */
-    private fun UVByteBuilder.withMetricUVs(): UVByteBuilder {
+    internal fun UVByteBuilder.withMetricUVs(): UVByteBuilder {
         if (!path().contains("/models/")) return this
         return UVByteBuilder.of(path(), estimatedSize()) {
             val json = JsonParser.parseString(build().toString(Charsets.UTF_8)).asJsonObject
@@ -136,7 +136,8 @@ internal object VanillaPlayerModels {
                         "up", "down" -> size[0] to size[2]
                         else -> size[0] to size[1]
                     }
-                    check(width > 0f && height > 0f && width <= 8f && height <= 8f) { "Invalid avatar face metric" }
+                    // Segmented armor joint caps reach 10px; UV4..14 still leaves a two-pixel marker inset.
+                    check(width > 0f && height > 0f && width <= 10f && height <= 10f) { "Invalid avatar face metric" }
                     face.asJsonObject.add(
                         "uv",
                         JsonArray(4).apply {
@@ -155,7 +156,7 @@ internal object VanillaPlayerModels {
     class Skin(private val slim: Boolean, image: BufferedImage) {
         // Owner models have identical data layouts. Generate colors once for each base/layered part.
         private val data = listOf(false, true).associateWith { overlay ->
-            models.getValue(Key(slim = slim, overlay = overlay, owner = false)).mapValues { it.value.write(image) }
+            models.getValue(Key(slim = slim, overlay = overlay, owner = false)).mapValues { BatchedSkinModels.data(it.value.write(image)) }
         }
 
         fun items(skinParts: Int, cameraOwner: Boolean): Map<String, TransformedItemStack> = Collections.unmodifiableMap(
@@ -163,7 +164,7 @@ internal object VanillaPlayerModels {
                 val overlay = skinParts and part.layerBit != 0
                 val model = models.getValue(Key(slim = slim, overlay = overlay, owner = cameraOwner)).getValue(part.name)
                 val data = data.getValue(overlay).getValue(part.name)
-                part.name to PLATFORM.nms().createSkinItem(model.itemModelNamespace(), data.floats, data.flags, emptyList(), data.colors)
+                part.name to PLATFORM.nms().createSkinItem(BatchedSkinModels.itemModel(model), data.floats, data.flags, emptyList(), data.colors)
             }
         )
 
@@ -172,7 +173,7 @@ internal object VanillaPlayerModels {
                 val overlay = skinParts and part.layerBit != 0
                 val model = handModels.getValue(slim to overlay).getValue(part.name)
                 val data = data.getValue(overlay).getValue(part.name)
-                part.name to PLATFORM.nms().createSkinItem(model.itemModelNamespace(), data.floats, data.flags, emptyList(), data.colors)
+                part.name to PLATFORM.nms().createSkinItem(BatchedSkinModels.itemModel(model), data.floats, data.flags, emptyList(), data.colors)
             }
         )
     }

@@ -108,7 +108,7 @@ class VanillaPlayerModelsTest {
         val resources = mutableListOf<UVByteBuilder>()
         VanillaPlayerModels.write(resources::add)
         assertEquals(resources.size, resources.map { it.path() }.toSet().size, "Duplicate pack paths")
-        assertEquals(56, resources.count { it.path().contains("/items/") })
+        assertEquals(112, resources.count { it.path().contains("/items/") })
         val textures = resources.filter { it.path().endsWith(".png") }.associateBy { it.path().substringAfterLast('/') }
         val expected = mapOf(
             "observer_pixel.png" to 0xFFFCF9FB.toInt(), "observer_translucent_pixel.png" to 0x80FCF9FB.toInt(),

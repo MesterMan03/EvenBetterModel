@@ -76,6 +76,103 @@ public interface SkinData {
     }
 
     /**
+     * Gets the supported rigid avatar-armor protocol. Version 1 uses the same geometry coordinates
+     * and material markers as {@link #vanillaParts(int, boolean)}. Availability of a particular
+     * equipment asset is checked by {@link #vanillaArmor(String, String, Integer, String, String, boolean)}.
+     * Version 2 additionally supports the explicit-opacity overload, with opaque and 40% variants.
+     * <pre>{@code boolean supported = skin.vanillaArmorProtocol() >= 1; }</pre>
+     * @return the supported protocol version, or 0 when unavailable
+     * @since 3.5.1
+     */
+    default int vanillaArmorProtocol() {
+        return 0;
+    }
+
+    /**
+     * Creates rigid armor for one equipment slot, keyed by its avatar bones. Head supplies head;
+     * chest supplies body and both arms; legs supplies body and both legs; feet supplies both legs.
+     * Asset, pattern and material identifiers must include their namespace. Only supported vanilla
+     * equipment textures and trims are accepted; unknown or unavailable assets return null.
+     * The caller keeps these separate from skin and other equipment slots, applies the original
+     * item's glint, and hides native armor only after every worn slot has been reproduced.
+     * <pre>{@code
+     * var armor = skin.vanillaArmor("chest", "minecraft:iron", null, "minecraft:coast", "minecraft:gold", false);
+     * if (armor != null) { var chest = armor.get("body"); }
+     * }</pre>
+     * @param slot head, chest, legs or feet
+     * @param assetId namespaced equipment asset identifier
+     * @param dyedColor optional 24-bit RGB color; null retains the equipment's undyed color
+     * @param trimPattern namespaced trim pattern identifier, or null when untrimmed
+     * @param trimMaterial namespaced trim material identifier, or null when untrimmed
+     * @param cameraOwner whether the armor uses the owner camera-clearance marker
+     * @return immutable bone map, or null when the request cannot be reproduced faithfully
+     * @since 3.5.1
+     */
+    default @Nullable Map<String, TransformedItemStack> vanillaArmor(
+            @NotNull String slot, @NotNull String assetId, @Nullable Integer dyedColor,
+            @Nullable String trimPattern, @Nullable String trimMaterial, boolean cameraOwner
+    ) {
+        return null;
+    }
+
+    /**
+     * Creates rigid armor with an explicit opacity, keeping the source cutout holes and colors.
+     * Geometry and slot keys match {@link #vanillaArmor(String, String, Integer, String, String, boolean)}.
+     * Opacity 1 is fully opaque and 0.4 is translucent; other values return null. The matching
+     * ChronoCore shader must preserve marker texture alpha when adding enchantment glint.
+     * <pre>{@code var armor = skin.vanillaArmor("feet", "minecraft:iron", null, null, null, false, 0.4F); }</pre>
+     * @param slot head, chest, legs or feet
+     * @param assetId namespaced equipment asset identifier
+     * @param dyedColor optional 24-bit RGB dye
+     * @param trimPattern optional namespaced trim pattern
+     * @param trimMaterial optional namespaced trim material
+     * @param cameraOwner whether to use the owner camera-clearance marker
+     * @param opacity supported opacity, either 1 or 0.4
+     * @return immutable bone map, or null when unsupported
+     * @since 3.5.1
+     */
+    default @Nullable Map<String, TransformedItemStack> vanillaArmor(
+            @NotNull String slot, @NotNull String assetId, @Nullable Integer dyedColor,
+            @Nullable String trimPattern, @Nullable String trimMaterial, boolean cameraOwner, float opacity
+    ) {
+        return opacity == 1F ? vanillaArmor(slot, assetId, dyedColor, trimPattern, trimMaterial, cameraOwner) : null;
+    }
+
+    /**
+     * Gets the supported segmented animation-armor protocol. Version 1 uses avatar material markers,
+     * metric UVs and the segmented player animation bone pivots, with opacity 1 or 0.4.
+     * <pre>{@code boolean supported = skin.animationArmorProtocol() == 1; }</pre>
+     * @return 1 when segmented animation armor is available, otherwise 0
+     * @since 3.5.1
+     */
+    default int animationArmorProtocol() {
+        return 0;
+    }
+
+    /**
+     * Creates equipment for the segmented animation rig. Head supplies head; chest supplies chest,
+     * waist, hip, both arms and forearms; legs supplies chest, waist, hip, both legs and forelegs;
+     * feet supplies both legs and forelegs. Callers attach each item to its named animation bone
+     * and apply per-slot glint. Unsupported equipment or opacity returns null.
+     * <pre>{@code var armor = skin.animationArmor("head", "minecraft:iron", null, null, null, false, 1F); }</pre>
+     * @param slot head, chest, legs or feet
+     * @param assetId namespaced equipment asset identifier
+     * @param dyedColor optional 24-bit RGB dye
+     * @param trimPattern optional namespaced trim pattern
+     * @param trimMaterial optional namespaced trim material
+     * @param cameraOwner whether to use the owner camera-clearance marker
+     * @param opacity supported opacity, either 1 or 0.4
+     * @return immutable animation bone map, or null when unsupported
+     * @since 3.5.1
+     */
+    default @Nullable Map<String, TransformedItemStack> animationArmor(
+            @NotNull String slot, @NotNull String assetId, @Nullable Integer dyedColor,
+            @Nullable String trimPattern, @Nullable String trimMaterial, boolean cameraOwner, float opacity
+    ) {
+        return null;
+    }
+
+    /**
      * Gets model skin
      * @return skin
      */
