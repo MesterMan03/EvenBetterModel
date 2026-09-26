@@ -8,6 +8,7 @@
 package kr.toxicity.model.manager
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kr.toxicity.library.dynamicuv.*
 import kr.toxicity.model.api.util.TransformedItemStack
@@ -98,11 +99,13 @@ internal object VanillaPlayerModels {
     fun write(block: (UVByteBuilder) -> Unit) {
         models.forEach { (key, parts) ->
             parts.values.forEach { model ->
-                BatchedSkinModels.export(model, if (key.owner) ownerTexture else observerTexture).forEach { block(it.withMetricUVs()) }
+                BatchedSkinModels.export(model, if (key.owner) ownerTexture else observerTexture).forEach {
+                    block(it.withMetricUVs(forceTranslucent = key.owner))
+                }
             }
         }
         handModels.values.forEach { parts ->
-            parts.values.forEach { model -> BatchedSkinModels.export(model, handTexture).forEach { block(it.withMetricUVs()) } }
+            parts.values.forEach { model -> BatchedSkinModels.export(model, handTexture).forEach { block(it.withMetricUVs(forceTranslucent = true)) } }
         }
         for ((name, alpha, rgb) in listOf(
             Triple("observer_pixel", 255, OBSERVER_RGB), Triple("observer_translucent_pixel", 128, OBSERVER_RGB),
@@ -120,11 +123,24 @@ internal object VanillaPlayerModels {
      * Fragment derivatives then recover the display's continuous scale without modifying skin
      * tints or selecting thousands of texture variants. The 26.3 cuboid baker maps UVs linearly;
      * the inset keeps every face inside the uniform 16x16 material marker at all mip levels.
+     * Owner materials enter the translucent passes so ChronoCore can read its eye-camera probe;
+     * the material flag preserves the original opacity, tint data, and observer rendering.
      */
-    internal fun UVByteBuilder.withMetricUVs(): UVByteBuilder {
+    internal fun UVByteBuilder.withMetricUVs(forceTranslucent: Boolean = false): UVByteBuilder {
         if (!path().contains("/models/")) return this
         return UVByteBuilder.of(path(), estimatedSize()) {
             val json = JsonParser.parseString(build().toString(Charsets.UTF_8)).asJsonObject
+            if (forceTranslucent) {
+                val textures = json.getAsJsonObject("textures")
+                for ((slot, texture) in textures.entrySet().toList()) {
+                    if (texture.isJsonPrimitive && !texture.asString.startsWith('#')) {
+                        textures.add(slot, JsonObject().apply {
+                            addProperty("sprite", texture.asString)
+                            addProperty("force_translucent", true)
+                        })
+                    }
+                }
+            }
             json.getAsJsonArray("elements").forEach { element ->
                 val cube = element.asJsonObject
                 val from = cube.getAsJsonArray("from")

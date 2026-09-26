@@ -101,7 +101,9 @@ internal object SegmentedArmorModels {
     fun write(block: (UVByteBuilder) -> Unit) {
         models.forEach { (variant, bones) ->
             bones.values.forEach { model ->
-                BatchedSkinModels.export(model, VanillaArmorModels.texture(variant.owner, variant.opacity)).forEach { block(it.withMetricUVs()) }
+                BatchedSkinModels.export(model, VanillaArmorModels.texture(variant.owner, variant.opacity)).forEach {
+                    block(it.withMetricUVs(forceTranslucent = variant.owner))
+                }
             }
         }
     }

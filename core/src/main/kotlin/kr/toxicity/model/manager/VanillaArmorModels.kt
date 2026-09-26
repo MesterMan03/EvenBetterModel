@@ -76,7 +76,9 @@ internal object VanillaArmorModels {
     fun write(block: (UVByteBuilder) -> Unit) {
         models.forEach { (key, bones) ->
             bones.values.forEach { model ->
-                BatchedSkinModels.export(model, texture(owner = key.owner, opacity = if (key.faded) FADED_OPACITY else 1f)).forEach { block(it.withMetricUVs()) }
+                BatchedSkinModels.export(model, texture(owner = key.owner, opacity = if (key.faded) FADED_OPACITY else 1f)).forEach {
+                    block(it.withMetricUVs(forceTranslucent = key.owner))
+                }
             }
         }
         for ((name, rgb) in listOf("armor_observer_faded" to VanillaPlayerModels.OBSERVER_RGB, "armor_owner_faded" to VanillaPlayerModels.OWNER_RGB)) {

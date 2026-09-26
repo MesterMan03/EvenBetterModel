@@ -21,6 +21,25 @@ import java.util.Map;
 public interface SkinData {
 
     /**
+     * Gets this skin's resolved texture as a 64 by 64 RGBA PNG, without another download.
+     * Legacy skins have mirrored left limbs and native legacy hat transparency; base-layer
+     * pixels are opaque, while modern outer-layer alpha is preserved. These are the same
+     * normalized pixels used to build this skin's model colors. Each call returns a copy.
+     * <pre>{@code
+     * var png = skin.skinTexturePng();
+     * if (png != null) { Files.write(texturePath, png); }
+     * }</pre>
+     *
+     * @return a normalized PNG, or null when this implementation does not expose its texture
+     * @throws java.io.UncheckedIOException if the PNG cannot be encoded
+     * @throws IllegalStateException if no PNG encoder is available
+     * @since 3.5.1
+     */
+    default @Nullable byte[] skinTexturePng() {
+        return null;
+    }
+
+    /**
      * Gets the material protocol used by this skin's vanilla-avatar items.
      * Version 1 uses 16 by 16 material-marker textures (RGB FC-F9-FB/FD/FC for observer,
      * owner and hands) and one UV texel per model pixel,

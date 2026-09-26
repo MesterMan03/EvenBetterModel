@@ -124,7 +124,14 @@ class VanillaPlayerModelsTest {
         }
         for ((suffix, texture) in mapOf("base" to "observer", "base_owner" to "owner", "base_hand" to "hand")) {
             val model = resources.single { it.path().endsWith("/right_arm_classic_${suffix}_0.json") }
-            assertEquals("chronovale:item/player_avatar/${texture}_pixel", json(model).getAsJsonObject("textures").get("0").asString)
+            val material = json(model).getAsJsonObject("textures").get("0")
+            assertEquals("chronovale:item/player_avatar/${texture}_pixel", if (material.isJsonObject) material.asJsonObject.get("sprite").asString else material.asString)
+        }
+        for (resource in resources.filter { it.path().contains("/models/") }) {
+            val owner = resource.path().contains("_owner_") || resource.path().contains("_hand_")
+            val material = json(resource).getAsJsonObject("textures").get("0")
+            assertEquals(owner, material.isJsonObject, resource.path())
+            if (owner) assertTrue(material.asJsonObject.get("force_translucent").asBoolean, resource.path())
         }
     }
 

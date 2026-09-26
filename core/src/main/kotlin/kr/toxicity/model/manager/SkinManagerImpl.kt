@@ -699,14 +699,17 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         block(UVTextureName.DEFAULT.translucentPixel(uvNamespace))
     }
 
+    private data class CachedSkin(val skin: SkinDataImpl, val request: Any)
+
+    private val profileRequests = SkinCacheRequests()
     private val profileCache = Caffeine.newBuilder()
         .expireAfterAccess(5, TimeUnit.MINUTES)
-        .removalListener<UUID, SkinDataImpl> { key, value, cause ->
+        .removalListener<UUID, CachedSkin> { key, value, cause ->
             if (cause == RemovalCause.EXPIRED && key != null && value != null) {
                 handleExpiration(key, value)
             }
         }
-        .build<UUID, SkinDataImpl>()
+        .build<UUID, CachedSkin>()
 
     private val fallback by lazy {
         PLATFORM.getResource("fallback_skin.png")!!.use {
@@ -714,9 +717,14 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         }
     }
 
-    private fun handleExpiration(key: UUID, skin: SkinDataImpl) {
-        skin.profile().let {
-            if (!callEvent { RemovePlayerSkinEvent(it) } || it.playerEquals()) profileCache.put(key, skin)
+    private fun handleExpiration(key: UUID, cached: CachedSkin) {
+        if (profileRequests.ifCurrent(key, cached.request) { true } != true) return
+        val profile = cached.skin.profile()
+        val retain = !callEvent { RemovePlayerSkinEvent(profile) } || profile.playerEquals()
+        profileRequests.ifCurrent(key, cached.request) {
+            // An expiration listener may finish after an explicit invalidation or a newer request.
+            if (retain) profileCache.asMap().putIfAbsent(key, cached)
+            else profileRequests.release(key, cached.request)
         }
     }
 
@@ -728,7 +736,12 @@ object SkinManagerImpl : SkinManager, GlobalManager {
 
     override fun complete(profile: ModelProfile.Uncompleted): CompletableFuture<out SkinData> {
         if (profile.info() == ModelProfileInfo.UNKNOWN) return CompletableFuture.completedFuture(fallback)
-        return profileCache.getIfPresent(profile.info().id)?.let { CompletableFuture.completedFuture(it) } ?: profile.complete().thenApply { provided ->
+        val key = profile.info().id
+        val request = synchronized(profileRequests) {
+            profileCache.getIfPresent(key)?.let { return CompletableFuture.completedFuture(it.skin) }
+            profileRequests.begin(key)
+        }
+        return profile.complete().thenApply { provided ->
             CreatePlayerSkinEvent(provided).run {
                 call()
                 modelProfile
@@ -749,10 +762,10 @@ object SkinManagerImpl : SkinManager, GlobalManager {
                 skin.toFuture().thenCombine(cape?.toFuture() ?: CompletableFuture.completedFuture(null)) { skin, cape ->
                     SkinDataImpl(
                         selected,
-                        skin.convertLegacy(),
+                        skin,
                         cape
                     ).apply {
-                        profileCache.put(profile.info().id, this)
+                        profileRequests.ifCurrent(key, request) { profileCache.put(key, CachedSkin(this, request)) }
                     }
                 }
             }.orElse {
@@ -761,38 +774,18 @@ object SkinManagerImpl : SkinManager, GlobalManager {
             }
         }.exceptionally {
             it.handleException("unable to read this skin: ${profile.info().name}")
-            profileCache.invalidate(profile.info().id)
+            profileRequests.ifCurrent(key, request) { profileCache.invalidate(key) }
             null
+        }.whenComplete { _, _ ->
+            profileRequests.ifCurrent(key, request) {
+                if (profileCache.getIfPresent(key)?.request !== request) profileRequests.release(key, request)
+            }
         }
     }
 
-    override fun removeCache(profile: ModelProfile) = profileCache.invalidate(profile.info().id)
-
-    private fun BufferedImage.convertLegacy() = if (height == 64) this else BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB).also { newImage ->
-        fun drawTo(from: UVPos, to: UVPos, xr: IntRange, zr: IntRange) {
-            val maxX = xr.last + xr.first
-            for (x in xr) {
-                for (z in zr) {
-                    newImage.setRGB(
-                        to.x + maxX - x,
-                        to.z + z,
-                        getRGB(from.x + x, from.z + z)
-                    )
-                }
-            }
-        }
-        fun drawTo(from: UVPos, to: UVPos) {
-            drawTo(from, to, 0..<4, 4..<16)
-            drawTo(from, to, 4..<8, 0..<16)
-            drawTo(from, to, 8..<12, 0..<16)
-            drawTo(from, to, 12..<16, 4..<16)
-        }
-        newImage.createGraphics().let {
-            it.drawImage(this, 0, 0, null)
-            it.dispose()
-        }
-        drawTo(UVPos(0, 16), UVPos(16, 48))
-        drawTo(UVPos(40, 16), UVPos(32, 48))
+    override fun removeCache(profile: ModelProfile) {
+        val key = profile.info().id
+        profileRequests.invalidate(key) { profileCache.invalidate(key) }
     }
 
     private class SkinDataImpl(
@@ -810,46 +803,55 @@ object SkinManagerImpl : SkinManager, GlobalManager {
         private val leftForeArm: TransformedItemStack,
         private val rightForeArm: TransformedItemStack,
         private val cape: TransformedItemStack?,
-        private val vanilla: VanillaPlayerModels.Skin
+        private val vanilla: VanillaPlayerModels.Skin,
+        private val skinTexture: SkinTexture
     ) : SkinData {
 
         constructor(
             profile: ModelProfile,
             skinImage: BufferedImage,
             capeImage: BufferedImage?
+        ) : this(profile, SkinTexture(skinImage), capeImage)
+
+        private constructor(
+            profile: ModelProfile,
+            skinTexture: SkinTexture,
+            capeImage: BufferedImage?
         ) : this(
             profile,
-            HEAD.asModelData(skinImage),
-            HIP.asModelData(BODY_SKIN_UV.closeSegment(skinImage, startY = 8, height = 4, closeTop = true)),
-            WAIST.asModelData(BODY_SKIN_UV.closeSegment(skinImage, startY = 4, height = 4, closeTop = true, closeBottom = true)),
-            CHEST.asModelData(BODY_SKIN_UV.closeSegment(skinImage, startY = 0, height = 4, closeBottom = true)),
+            HEAD.asModelData(skinTexture.image),
+            HIP.asModelData(BODY_SKIN_UV.closeSegment(skinTexture.image, startY = 8, height = 4, closeTop = true)),
+            WAIST.asModelData(BODY_SKIN_UV.closeSegment(skinTexture.image, startY = 4, height = 4, closeTop = true, closeBottom = true)),
+            CHEST.asModelData(BODY_SKIN_UV.closeSegment(skinTexture.image, startY = 0, height = 4, closeBottom = true)),
             if (profile.skin().slim) {
-                SLIM_LEFT_ARM.asModelData(SLIM_LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+                SLIM_LEFT_ARM.asModelData(SLIM_LEFT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 0, height = 6, closeBottom = true))
             } else {
-                LEFT_ARM.asModelData(LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+                LEFT_ARM.asModelData(LEFT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 0, height = 6, closeBottom = true))
             },
             if (profile.skin().slim) {
-                SLIM_RIGHT_ARM.asModelData(SLIM_RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+                SLIM_RIGHT_ARM.asModelData(SLIM_RIGHT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 0, height = 6, closeBottom = true))
             } else {
-                RIGHT_ARM.asModelData(RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true))
+                RIGHT_ARM.asModelData(RIGHT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 0, height = 6, closeBottom = true))
             },
-            LEFT_LEG.asModelData(LEFT_LEG_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true)),
-            LEFT_FORELEG.asModelData(LEFT_LEG_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)),
-            RIGHT_LEG.asModelData(RIGHT_LEG_SKIN_UV.closeSegment(skinImage, startY = 0, height = 6, closeBottom = true)),
-            RIGHT_FORELEG.asModelData(RIGHT_LEG_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)),
+            LEFT_LEG.asModelData(LEFT_LEG_SKIN_UV.closeSegment(skinTexture.image, startY = 0, height = 6, closeBottom = true)),
+            LEFT_FORELEG.asModelData(LEFT_LEG_SKIN_UV.closeSegment(skinTexture.image, startY = 6, height = 6, closeTop = true)),
+            RIGHT_LEG.asModelData(RIGHT_LEG_SKIN_UV.closeSegment(skinTexture.image, startY = 0, height = 6, closeBottom = true)),
+            RIGHT_FORELEG.asModelData(RIGHT_LEG_SKIN_UV.closeSegment(skinTexture.image, startY = 6, height = 6, closeTop = true)),
             if (profile.skin().slim) {
-                SLIM_LEFT_FOREARM.asModelData(SLIM_LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+                SLIM_LEFT_FOREARM.asModelData(SLIM_LEFT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 6, height = 6, closeTop = true)).asItem()
             } else {
-                LEFT_FOREARM.asModelData(LEFT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+                LEFT_FOREARM.asModelData(LEFT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 6, height = 6, closeTop = true)).asItem()
             },
             if (profile.skin().slim) {
-                SLIM_RIGHT_FOREARM.asModelData(SLIM_RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+                SLIM_RIGHT_FOREARM.asModelData(SLIM_RIGHT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 6, height = 6, closeTop = true)).asItem()
             } else {
-                RIGHT_FOREARM.asModelData(RIGHT_ARM_SKIN_UV.closeSegment(skinImage, startY = 6, height = 6, closeTop = true)).asItem()
+                RIGHT_FOREARM.asModelData(RIGHT_ARM_SKIN_UV.closeSegment(skinTexture.image, startY = 6, height = 6, closeTop = true)).asItem()
             },
             capeImage?.let { CAPE.asModelData(it).asItem() },
-            VanillaPlayerModels.Skin(slim = profile.skin().slim, image = skinImage)
+            VanillaPlayerModels.Skin(slim = profile.skin().slim, image = skinTexture.image),
+            skinTexture
         )
+        override fun skinTexturePng(): ByteArray = skinTexture.png()
         override fun vanillaAvatarProtocol(): Int = 1
         override fun vanillaParts(skinParts: Int, cameraOwner: Boolean): Map<String, TransformedItemStack> = vanilla.items(skinParts, cameraOwner = cameraOwner)
         override fun firstPersonArms(skinParts: Int): Map<String, TransformedItemStack> = vanilla.arms(skinParts)
@@ -902,7 +904,7 @@ object SkinManagerImpl : SkinManager, GlobalManager {
             }
         }
         profileCache.asMap().entries.forEach {
-            it.value.refresh()
+            it.value.skin.refresh()
         }
     }
 
