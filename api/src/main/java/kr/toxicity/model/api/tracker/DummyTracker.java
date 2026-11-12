@@ -7,10 +7,8 @@
 
 package kr.toxicity.model.api.tracker;
 
-import kr.toxicity.model.api.animation.AnimationModifier;
 import kr.toxicity.model.api.data.renderer.RenderPipeline;
 import kr.toxicity.model.api.event.CreateDummyTrackerEvent;
-import kr.toxicity.model.api.nms.PlayerChannelHandler;
 import kr.toxicity.model.api.platform.PlatformLocation;
 import kr.toxicity.model.api.platform.PlatformPlayer;
 import kr.toxicity.model.api.util.EventUtil;
@@ -44,7 +42,6 @@ public final class DummyTracker extends Tracker {
     public DummyTracker(@NotNull PlatformLocation location, @NotNull RenderPipeline pipeline, @NotNull TrackerModifier modifier, @NotNull Consumer<DummyTracker> preUpdateConsumer) {
         super(pipeline, modifier);
         this.location = location;
-        animate("spawn", AnimationModifier.DEFAULT_WITH_PLAY_ONCE);
         pipeline.scale(() -> scaler().scale(this));
         rotation(() -> new ModelRotation(this.location.pitch(), this.location.yaw()));
         preUpdateConsumer.accept(this);
@@ -64,7 +61,7 @@ public final class DummyTracker extends Tracker {
             this.location = location;
             var bundler = pipeline.createBundler();
             pipeline.forEach(b -> b.teleport(location, bundler));
-            if (bundler.isNotEmpty()) pipeline.allPlayer().map(PlayerChannelHandler::player).forEach(bundler::send);
+            if (bundler.isNotEmpty()) pipeline.forEachAllPlayer(bundler::send);
         }
     }
 

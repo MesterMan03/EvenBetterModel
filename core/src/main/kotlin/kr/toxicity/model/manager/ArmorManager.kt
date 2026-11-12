@@ -190,7 +190,7 @@ object ArmorManager : GlobalManager {
         pipeline: ReloadPipeline,
         zipper: PackZipper
     ) {
-        if (!CONFIG.module().playerAnimation) {
+        if (!CONFIG.module().playerAnimation || !CONFIG.module().playerArmor) {
             armor = ArmorModel.EMPTY
             VanillaArmorModels.reload(null)
             return

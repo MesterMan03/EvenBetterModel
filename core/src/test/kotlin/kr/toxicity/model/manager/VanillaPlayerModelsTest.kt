@@ -35,7 +35,7 @@ class VanillaPlayerModelsTest {
                 "left_arm" to Bounds(listOf(-2f, -10f, -2f), listOf(1f, 2f, 2f))
             ) else classic
             val actual = VanillaPlayerModels.parts(slim = slim).associate { part ->
-                part.name to bounds(part.model("_test", overlay = false).asJson())
+                part.name to bounds(AvatarPackResources.export(part.model("_test", overlay = false)))
             }
             assertEquals(expected, actual, "slim=$slim")
         }
@@ -44,8 +44,8 @@ class VanillaPlayerModelsTest {
     @Test
     fun `overlay shells use native half pixel hat and quarter pixel clothing inflation`() {
         for (part in VanillaPlayerModels.parts(slim = false)) {
-            val base = bounds(part.model("_test", overlay = false).asJson())
-            val overlay = bounds(part.model("_test", overlay = true).asJson())
+            val base = bounds(AvatarPackResources.export(part.model("_test", overlay = false)))
+            val overlay = bounds(AvatarPackResources.export(part.model("_test", overlay = true)))
             val inflate = if (part.name == "head") 0.5f else 0.25f
             assertEquals(base.min.map { it - inflate }, overlay.min, part.name)
             assertEquals(base.max.map { it + inflate }, overlay.max, part.name)
@@ -56,7 +56,7 @@ class VanillaPlayerModelsTest {
     fun `head texels face the correct way on every side including caps`() {
         val head = VanillaPlayerModels.parts(slim = false).first { it.name == "head" }.model("_test", overlay = false)
         val colors = head.write(coordinateSkin()).colors
-        val geometry = json(head.asJson().first()).getAsJsonArray("elements")
+        val geometry = json(AvatarPackResources.export(head).single { it.path().contains("/models/") }).getAsJsonArray("elements")
         // DynamicUV's first texel in each face must agree with the transformed native cube UVs.
         val expected = mapOf(
             "north" to Pair(listOf(3f, 7f, -4f), rgb(8, 8)),
@@ -168,7 +168,7 @@ class VanillaPlayerModelsTest {
 
     private data class Bounds(val min: List<Float>, val max: List<Float>)
 
-    private fun bounds(resources: List<UVByteBuilder>): Bounds {
+    private fun bounds(resources: Collection<UVByteBuilder>): Bounds {
         val elements = resources.filter { it.path().contains("/models/") }.flatMap { json(it).getAsJsonArray("elements").map { element -> element.asJsonObject } }
         assertTrue(elements.isNotEmpty())
         return Bounds(

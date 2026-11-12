@@ -114,7 +114,7 @@ internal object VanillaPlayerModels {
         )) {
             val image = BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB)
             for (y in 0 until 16) for (x in 0 until 16) image.setRGB(x, y, (alpha shl 24) or rgb)
-            block(UVByteBuilder.of(namespace.texture(name), image))
+            block(AvatarPackResources.texture(namespace.texture(name), image))
         }
     }
 
@@ -128,7 +128,7 @@ internal object VanillaPlayerModels {
      */
     internal fun UVByteBuilder.withMetricUVs(forceTranslucent: Boolean = false): UVByteBuilder {
         if (!path().contains("/models/")) return this
-        return UVByteBuilder.of(path(), estimatedSize()) {
+        return UVByteBuilder(path(), estimatedSize()) {
             val json = JsonParser.parseString(build().toString(Charsets.UTF_8)).asJsonObject
             if (forceTranslucent) {
                 val textures = json.getAsJsonObject("textures")
@@ -165,7 +165,7 @@ internal object VanillaPlayerModels {
                     )
                 }
             }
-            UVByteBuilder.GSON.toJson(json).toByteArray(Charsets.UTF_8)
+            AvatarPackResources.bytes(json)
         }
     }
 

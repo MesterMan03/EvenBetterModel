@@ -40,7 +40,10 @@ import org.jetbrains.annotations.Unmodifiable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.SequencedSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.*;
@@ -147,9 +150,9 @@ public final class RenderedBone implements BoneEventHandler {
 
     public void locator(@NotNull BoneIKSolver solver) {
         if (getGroup().getParent() instanceof BlueprintElement.NullObject nullObject) {
-            var ikTarget = nullObject.ikTarget();
-            if (ikTarget == null) return;
-            solver.addLocator(nullObject.ikSource(), ikTarget, this);
+            var ikChainConfig = nullObject.config();
+            if (ikChainConfig == null) return;
+            solver.addLocator(ikChainConfig, this);
         }
     }
 
@@ -486,6 +489,29 @@ public final class RenderedBone implements BoneEventHandler {
         if (nametag != null) nametag.remove(bundler);
     }
 
+    /**
+     * Tests whether the parent element is derived from (an instance of) the specified class type.
+     *
+     * <pre>{@code
+     * // Instead of:
+     * boolean isDerived = getGroup().getParent() instanceof BlueprintElement.class;
+     *
+     * // You can write:
+     * boolean isDerived = isDerivedFrom(BlueprintElement.class);
+     * }</pre>
+     *
+     * @param elementClass the expected class type
+     * @return {@code true} if the parent is an instance of {@code elementClass}; {@code false} otherwise
+     * @since 3.6.0
+     */
+    public boolean isDerivedFrom(@NotNull Class<? extends BlueprintElement> elementClass) {
+        return elementClass.isInstance(getGroup().getParent());
+    }
+
+    public @NotNull Vector3f rootPosition() {
+        return root.group.getPosition();
+    }
+
     public @NotNull Stream<RenderedBone> flatten() {
         return flattenBones().stream();
     }
@@ -532,9 +558,7 @@ public final class RenderedBone implements BoneEventHandler {
 
     @NotNull
     public Vector3f hitBoxPosition(@NotNull BoneMovement cache) {
-        var box = getGroup().getHitBox();
-        if (box != null) return worldPosition(new BonePosition(EMPTY_VECTOR, group.getHitBoxPoint(), null), cache);
-        return worldPosition(cache);
+        return worldPosition(group.getHitboxPosition(), cache);
     }
 
     public float hitBoxScale() {
@@ -657,7 +681,7 @@ public final class RenderedBone implements BoneEventHandler {
 
         private @NotNull Vector3f worldPosition(@NotNull BonePosition position, @NotNull BoneMovement cache) {
             var progress = progress();
-            var interpolated = lock.accessToReadLock(() -> before.lerp(current, progress, cache));
+            var interpolated = lock.accessToReadLock(() -> updateCurrent.get() ? cache.set(current) : before.lerp(current, progress, cache));
             return MathUtil.fma(
                     interpolated.position()
                         .add(itemStack.offset())

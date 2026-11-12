@@ -84,7 +84,7 @@ internal object VanillaArmorModels {
         for ((name, rgb) in listOf("armor_observer_faded" to VanillaPlayerModels.OBSERVER_RGB, "armor_owner_faded" to VanillaPlayerModels.OWNER_RGB)) {
             val image = BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB)
             for (y in 0 until 16) for (x in 0 until 16) image.setRGB(x, y, ((FADED_OPACITY * 255).roundToInt() shl 24) or rgb)
-            block(UVByteBuilder.of(namespace.texture(name), image))
+            block(AvatarPackResources.texture(namespace.texture(name), image))
         }
     }
 

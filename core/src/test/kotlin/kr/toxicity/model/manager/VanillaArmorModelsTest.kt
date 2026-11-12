@@ -83,8 +83,8 @@ class VanillaArmorModelsTest {
         val conditions = JsonParser.parseString(item).asJsonObject.getAsJsonObject("model").getAsJsonArray("models")
         assertEquals(384, conditions.size())
         for (condition in conditions) {
-            assertEquals("minecraft:condition", condition.asJsonObject.get("type").asString)
-            assertEquals("minecraft:empty", condition.asJsonObject.getAsJsonObject("on_false").get("type").asString)
+            assertEquals("condition", condition.asJsonObject.get("type").asString.removePrefix("minecraft:"))
+            assertEquals("empty", condition.asJsonObject.getAsJsonObject("on_false").get("type").asString.removePrefix("minecraft:"))
         }
     }
 

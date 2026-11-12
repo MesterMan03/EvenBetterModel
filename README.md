@@ -18,14 +18,14 @@
 ![](https://github.com/user-attachments/assets/ff515577-6a72-48ba-9943-81f00dddb375)
 
 * * *
-<sub>(In BlockBench / In Minecraft)</sub>
+<sub>(In Blockbench / In Minecraft)</sub>
 
 # ✨ Introduction
 
-**BetterModel** is a server-based engine that provides runtime [BlockBench](https://www.blockbench.net/) model rendering & animating for Minecraft Java Edition.
+**BetterModel** is a server-based engine that provides runtime [Blockbench](https://www.blockbench.net/) model rendering & animating for Minecraft Java Edition.
 
 - Built on the `item-display` packet.
-- Implements **essential BlockBench elements**, including `cubes`, `meshes`, `null objects`, and `locators`.
+- Implements **essential Blockbench elements**, including `cubes`, `meshes`, `null objects`, and `locators`.
 - Support for **model animations**, `Molang` expressions, and **IK** (Inverse Kinematics) rigging.
 - Supports **player skin models** and **custom armor**.
 - **Automated resource pack generation** with **zero reliance on core shaders**.
@@ -92,7 +92,7 @@ BetterModel aims to be a reliable engine that provides stable, high-quality anim
 
 ## 💻 API
 
-[![](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/maven-central_vector.svg)](https://central.sonatype.com/artifact/io.github.toxicity188/bettermodel)
+[![](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/maven-central_vector.svg)](https://central.sonatype.com/artifact/io.github.toxicity188/bettermodel-api)
 
 > [!NOTE]\
 > For more detailed API specifications, please refer to our [GitHub Wiki](https://github.com/toxicity188/BetterModel/wiki/API-example).

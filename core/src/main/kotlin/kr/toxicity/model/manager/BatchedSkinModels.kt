@@ -44,13 +44,13 @@ internal object BatchedSkinModels {
     }
 
     fun export(model: UVModel, texture: UVTextureName): List<UVByteBuilder> {
-        val resources = model.asJson(texture)
+        val resources = AvatarPackResources.export(model, texture)
         val item = resources.single { it.path().contains("/items/") }
         val original = json(item)
         val children = original.getAsJsonObject("model").getAsJsonArray("models").map { it.asJsonObject }
-        val alpha = children.filter { it.get("property")?.asString == "minecraft:custom_model_data" }
-        val flagEncoding = alpha.firstOrNull()?.get("type")?.asString == "minecraft:condition"
-        require(alpha.all { (it.get("type").asString == "minecraft:condition") == flagEncoding })
+        val alpha = children.filter { it.get("property")?.asString?.removePrefix("minecraft:") == "custom_model_data" }
+        val flagEncoding = alpha.firstOrNull()?.get("type")?.asString?.removePrefix("minecraft:") == "condition"
+        require(alpha.all { (it.get("type").asString.removePrefix("minecraft:") == "condition") == flagEncoding })
         require(alpha.map { it.get("index").asInt } == alpha.indices.toList()) { "Expected contiguous alpha indices" }
         val geometry = resources.filter { it.path().contains("/models/") }.associateBy { resource ->
             val path = resource.path().removePrefix("assets/")
@@ -81,7 +81,7 @@ internal object BatchedSkinModels {
             }
             val name = itemModel(model) + "_group_${group}_${if (translucent) "translucent" else "opaque"}"
             val path = "assets/${name.substringBefore(':')}/models/${name.substringAfter(':')}.json"
-            added += UVByteBuilder.of(path, elements.size() * 256L, requireNotNull(merged))
+            added += AvatarPackResources.json(path, elements.size() * 256L, requireNotNull(merged))
             return JsonObject().apply {
                 addProperty("type", "minecraft:model")
                 addProperty("model", name)
@@ -104,7 +104,7 @@ internal object BatchedSkinModels {
             }
         }
         val batched = original.deepCopy().apply { add("model", composite(children.filter { it !in alpha } + grouped)) }
-        added += UVByteBuilder.of(item.path().removeSuffix(".json") + SUFFIX + ".json", item.estimatedSize(), batched)
+        added += AvatarPackResources.json(item.path().removeSuffix(".json") + SUFFIX + ".json", item.estimatedSize(), batched)
         return resources + added
     }
 

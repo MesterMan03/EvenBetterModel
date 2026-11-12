@@ -1,15 +1,15 @@
 [versions]
-kotlin = "2.4.20"
-paperweight = "2.0.0-beta.23"
+kotlin = "2.4.21"
+paperweight = "2.0.0-beta.24"
 resourcefactory = "1.4.0"
 
 shadow = "9.6.1"
 minotaur = "2.10.0"
 hangarPublish = "0.1.4"
 
-fabric-api = "0.161.0+26.3"
-fabric-language-kotlin = "1.14.1+kotlin.2.4.20"
-polymer = "0.18.2+26.3"
+fabric-api = "0.166.2+26.3"
+fabric-language-kotlin = "1.14.2+kotlin.2.4.21"
+polymer = "0.18.7+26.3"
 
 cloud-bukkit = "2.0.1"
 cloud-mod = "2.1.0"
@@ -19,11 +19,15 @@ configurate = "4.2.0"
 
 neoform = "26.3-1"
 
+# For test server
+viaversion = "5.12.2"
+skript = "2.17.1"
+
 [libraries]
 kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 
 semver4j = "org.semver4j:semver4j:6.0.0"
-caffeine = "com.github.ben-manes.caffeine:caffeine:3.3.0"
+caffeine = "com.github.ben-manes.caffeine:caffeine:3.3.1"
 
 adventure-api = "net.kyori:adventure-api:5.2.0"
 adventure-examination = "net.kyori:examination-api:1.3.0"
@@ -31,9 +35,9 @@ adventure-option = "net.kyori:option:1.1.0"
 adventure-platform-bukkit = "io.github.toxicity188:adventure-platform-bukkit:5.2.0"
 adventure-platform-fabric = "net.kyori:adventure-platform-fabric:7.2.0"
 
-asm-tree = "org.ow2.asm:asm-tree:9.10.1"
+asm-tree = "org.ow2.asm:asm-tree:9.11.1"
 
-fabric-loader = "net.fabricmc:fabric-loader:0.19.5"
+fabric-loader = "net.fabricmc:fabric-loader:0.20.1"
 fabric-language-kotlin = { module = "net.fabricmc:fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
 
 polymer-resource-pack = { module = "eu.pb4:polymer-resource-pack", version.ref = "polymer" }
@@ -42,9 +46,9 @@ configurate-core = { module = "org.spongepowered:configurate-core", version.ref 
 configurate-yaml = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate" }
 
 joml = "org.joml:joml:1.10.9"
-gson = "com.google.code.gson:gson:2.14.0"
+gson = "com.google.code.gson:gson:2.15.0"
 fastutil = "it.unimi.dsi:fastutil:8.5.19"
-guava = "com.google.guava:guava:33.7.1-jre"
+guava = "com.google.guava:guava:33.8.0-jre"
 
 cloud-paper = { module = "org.incendo:cloud-paper", version.ref = "cloud-bukkit" }
 cloud-fabric = { module = "org.incendo:cloud-fabric", version.ref = "cloud-mod" }
@@ -53,8 +57,8 @@ geantyref = "io.leangen.geantyref:geantyref:2.0.1"
 
 lombok = "org.projectlombok:lombok:1.18.48"
 bStats = "org.bstats:bstats-bukkit:3.2.1"
-dynamicUV = "io.github.toxicity188:dynamicuv:1.2.2"
-armormodel = "io.github.toxicity188:armormodel:1.1.0"
+dynamicUV = "io.github.toxicity188:dynamicuv:1.4.1"
+armormodel = "io.github.toxicity188:armormodel:1.2.0"
 javamesh = "io.github.toxicity188:java-mesh:0.0.1"
 molangCompiler = "gg.moonflower:molang-compiler:3.1.1.19"
 libby = "net.byteflux:libby-bukkit:1.3.2"
@@ -65,6 +69,10 @@ build-minotaur = { module = "com.modrinth.minotaur:com.modrinth.minotaur.gradle.
 build-hangarPublish = { module = "io.papermc.hangar-publish-plugin:io.papermc.hangar-publish-plugin.gradle.plugin", version.ref = "hangarPublish" }
 build-resourcefactory = { module = "xyz.jpenilla:resource-factory", version.ref = "resourcefactory" }
 build-paperweight = { module = "io.papermc.paperweight.userdev:io.papermc.paperweight.userdev.gradle.plugin", version.ref = "paperweight" }
+
+# For renovate
+viaversion-api = { module = "com.viaversion:viaversion-api", version.ref = "viaversion" }
+skript = { module = "com.github.SkriptLang:Skript", version.ref = "skript"}
 
 [bundles]
 minecraft = [
