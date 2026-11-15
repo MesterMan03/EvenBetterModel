@@ -674,7 +674,8 @@ object SkinManagerImpl : SkinManager, GlobalManager {
             packName(itemObf.obfuscate(model))
             return asJson(UVLoadContext(
                 textureName,
-                modelObf::obfuscate
+                // DynamicUV hashes use mixed-case Base64. Hex preserves their identity when pack obfuscation is disabled.
+                { identifier -> modelObf.obfuscate(HexFormat.of().formatHex(identifier.toByteArray(Charsets.UTF_8))) }
             ) { indexer, _, array ->
                 armorResource
                     ?.takeIf { CONFIG.module().playerArmor }

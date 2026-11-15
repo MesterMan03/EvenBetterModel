@@ -12,6 +12,6 @@ dependencies {
     compileOnly(libs.cloud.core)
 
     // DynamicUV's exported geometry and skin-color data are exercised without a Minecraft server.
-    testImplementation(libs.gson)
-    testImplementation(libs.fastutil)
+    testImplementation(libs.bundles.minecraft)
+    testImplementation(libs.armormodel)
 }
