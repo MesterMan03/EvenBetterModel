@@ -20,11 +20,6 @@ dependencies {
     shade(project(":nms:v26_R3")) { isTransitive = false }
 }
 
-modrinth {
-    gameVersions = SUPPORTED_VERSIONS
-    loaders = BUKKIT_LOADERS
-}
-
 tasks.shadowJar {
     manifest {
         attributes["paperweight-mappings-namespace"] = "spigot"

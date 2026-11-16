@@ -2,7 +2,6 @@ import xyz.jpenilla.resourcefactory.fabric.Environment
 
 plugins {
     alias(libs.plugins.convention.publish)
-    alias(libs.plugins.convention.modrinth)
     alias(libs.plugins.resourcefactory.fabric)
     id("net.fabricmc.fabric-loom")
 }
@@ -189,17 +188,7 @@ tasks {
     }
 }
 
-modrinth {
-    loaders = listOf("fabric", "quilt")
-    uploadFile.set(jarDir.map { it.file(jarName) })
-    gameVersions = LATEST_VERSION
-    dependencies {
-        required.version("fabric-api", libs.versions.fabric.api.get())
-        required.version("fabric-language-kotlin", libs.versions.fabric.language.kotlin.get())
-        required.version("polymer", libs.versions.polymer.get())
+// Retained upstream reference for the former publishing-only optional dependency:
 //        optional.project(
 //            "skinsrestorer"
 //        )
-    }
-    environment = "server_only"
-}

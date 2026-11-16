@@ -1,14 +1,9 @@
-import io.papermc.hangarpublishplugin.model.Platforms
-
 plugins {
     alias(libs.plugins.convention.standard)
-    alias(libs.plugins.hangar)
     id("xyz.jpenilla.run-paper") version "3.1.0"
 }
 
 val minecraft = property("minecraft_version").toString()
-val versionString = version.toString()
-val groupString = group.toString()
 
 val javadocJar = tasks.register<Jar>("javadocJar") {
     description = "Makes javadoc."
@@ -51,30 +46,5 @@ tasks {
     }
     jar {
         enabled = false
-    }
-}
-
-hangarPublish {
-    publications.register("plugin") {
-        version = project.version as String
-        id = "BetterModel"
-        apiKey = System.getenv("HANGAR_API_TOKEN")
-        val log = commitMessage()
-        if (log != null) {
-            changelog = log
-            channel = "Snapshot"
-        } else {
-            changelog = rootProject.file("changelog/$versionString.md").readText()
-            channel = "Release"
-        }
-        platforms {
-            register(Platforms.PAPER) {
-                jar = bettermodel
-                platformVersions = SUPPORTED_VERSIONS
-                dependencies {
-                    hangar("SkinsRestorer") { required = false }
-                }
-            }
-        }
     }
 }

@@ -12,8 +12,6 @@ dependencies {
 
     implementation(libs.build.kotlin.jvm)
     implementation(libs.build.shadow)
-    implementation(libs.build.hangarPublish)
-    implementation(libs.build.minotaur)
     implementation(libs.build.resourcefactory)
     implementation(libs.build.paperweight)
 

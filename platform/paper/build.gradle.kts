@@ -22,15 +22,6 @@ dependencies {
     shade(project(":nms:v26_R3")) { isTransitive = false }
 }
 
-modrinth {
-    gameVersions = SUPPORTED_VERSIONS
-    loaders = PAPER_LOADERS
-}
-
-tasks.modrinth {
-    dependsOn(tasks.modrinthSyncBody)
-}
-
 val generatePaperLibrary = tasks.register("generatePaperLibrary") {
     description = "Generates paper library info."
     val outputProvider = libraryDir
