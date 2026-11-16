@@ -27,7 +27,7 @@ internal object VanillaArmorModels {
         "legs" to setOf("body", "right_leg", "left_leg"),
         "feet" to setOf("right_leg", "left_leg")
     )
-    private val namespace = UVNamespace("chronovale", "player_avatar")
+    private val namespace = UVNamespace("chronocore", "player_avatar")
     private val observerTexture = UVTextureName("observer_pixel", "observer_translucent_pixel")
     private val ownerTexture = UVTextureName("owner_pixel", "owner_translucent_pixel")
     private val fadedObserverTexture = UVTextureName("armor_observer_faded", "armor_observer_faded")

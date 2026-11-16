@@ -101,7 +101,7 @@ class VanillaArmorModelsTest {
             val material = model.getAsJsonObject("textures").get("0")
             assertEquals(expected == "owner", material.isJsonObject, resource.path())
             if (material.isJsonObject) assertTrue(material.asJsonObject.get("force_translucent").asBoolean, resource.path())
-            assertEquals("chronovale:item/player_avatar/$texture", if (material.isJsonObject) material.asJsonObject.get("sprite").asString else material.asString)
+            assertEquals("chronocore:item/player_avatar/$texture", if (material.isJsonObject) material.asJsonObject.get("sprite").asString else material.asString)
             for (entry in model.getAsJsonArray("elements")) {
                 val element = entry.asJsonObject
                 val size = (0..2).map { element.getAsJsonArray("to")[it].asFloat - element.getAsJsonArray("from")[it].asFloat }

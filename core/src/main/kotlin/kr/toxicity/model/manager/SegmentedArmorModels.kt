@@ -31,7 +31,7 @@ internal object SegmentedArmorModels {
         val internalBottom get() = startY + height < totalHeight
     }
 
-    private val namespace = UVNamespace("chronovale", "player_avatar")
+    private val namespace = UVNamespace("chronocore", "player_avatar")
     internal val slots = mapOf(
         "head" to listOf(Segment("head", 8, 8, 8, 4f, 0, 0, 0, 8)),
         "chest" to body() + limbs("arm"),

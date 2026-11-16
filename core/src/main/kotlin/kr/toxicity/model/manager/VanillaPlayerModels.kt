@@ -23,7 +23,7 @@ import kotlin.math.abs
  * DynamicUV retains its per-texel faces to support arbitrary skins without rebuilding the pack.
  */
 internal object VanillaPlayerModels {
-    private val namespace = UVNamespace("chronovale", "player_avatar")
+    private val namespace = UVNamespace("chronocore", "player_avatar")
     private val observerTexture = UVTextureName("observer_pixel", "observer_translucent_pixel")
     private val ownerTexture = UVTextureName("owner_pixel", "owner_translucent_pixel")
     private val handTexture = UVTextureName("hand_pixel", "hand_translucent_pixel")

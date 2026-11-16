@@ -84,7 +84,7 @@ class SegmentedArmorModelsTest {
             val material = model.getAsJsonObject("textures").get("0")
             assertEquals(owner, material.isJsonObject, resource.path())
             if (owner) assertTrue(material.asJsonObject.get("force_translucent").asBoolean, resource.path())
-            assertEquals("chronovale:item/player_avatar/$texture", if (material.isJsonObject) material.asJsonObject.get("sprite").asString else material.asString)
+            assertEquals("chronocore:item/player_avatar/$texture", if (material.isJsonObject) material.asJsonObject.get("sprite").asString else material.asString)
             for (element in model.getAsJsonArray("elements")) for (face in element.asJsonObject.getAsJsonObject("faces").entrySet()) {
                 val uv = face.value.asJsonObject.getAsJsonArray("uv").map { it.asFloat }
                 assertTrue(uv.all { it in 4f..14f }, resource.path())
