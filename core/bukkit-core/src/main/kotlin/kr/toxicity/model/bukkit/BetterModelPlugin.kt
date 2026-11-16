@@ -69,6 +69,25 @@ abstract class BetterModelPlugin : AbstractBetterModelPlugin() {
             "Build number: ${props.snapshot}".toComponent(LIGHT_PURPLE)
         )
         startBukkitCommand()
+        val initialLoad = InitialModelLoad(
+            onSuccess = { result ->
+                info(
+                    "Plugin is loaded. (${result.totalTime().withComma()} ms)".toComponent(GREEN),
+                    "Minecraft version: ${props.version}, NMS version: ${props.nms.version()}".toComponent(AQUA),
+                    "Platform: ${
+                        when {
+                            IS_FOLIA -> "Folia"
+                            IS_PURPUR -> "Purpur"
+                            IS_PAPER -> "Paper"
+                            else -> "Bukkit"
+                        }
+                    }".toComponent(AQUA)
+                )
+            },
+            onFailure = { it.handleException("Unable to load plugin properly.") }
+        )
+        // Observe completion before other plugins can race the ServerLoadEvent's initial reload.
+        addReloadEndHandler { if (!skipInitialReload) initialLoad.complete(it) }
         registerListener(object : Listener {
             @EventHandler
             fun PlayerJoinEvent.join() {
@@ -88,23 +107,9 @@ abstract class BetterModelPlugin : AbstractBetterModelPlugin() {
 
             @EventHandler
             fun ServerLoadEvent.load() {
-                if (skipInitialReload || type != ServerLoadEvent.LoadType.STARTUP) return
-                when (val result = reload(ReloadInfo(true, Audience.empty()))) {
-                    is Failure -> result.throwable.handleException("Unable to load plugin properly.")
-                    is OnReload -> throw RuntimeException("Plugin load failed.")
-                    is Success -> info(
-                        "Plugin is loaded. (${result.totalTime().withComma()} ms)".toComponent(GREEN),
-                        "Minecraft version: ${props.version}, NMS version: ${props.nms.version()}".toComponent(AQUA),
-                        "Platform: ${
-                            when {
-                                IS_FOLIA -> "Folia"
-                                IS_PURPUR -> "Purpur"
-                                IS_PAPER -> "Paper"
-                                else -> "Bukkit"
-                            }
-                        }".toComponent(AQUA)
-                    )
-                }
+                if (skipInitialReload || type != ServerLoadEvent.LoadType.STARTUP || initialLoad.isComplete) return
+                // OnReload means the competing load will report its outcome through the completion handler.
+                reload(ReloadInfo(true, Audience.empty()))
             }
         })
     }
